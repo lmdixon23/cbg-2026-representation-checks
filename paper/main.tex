@@ -1,0 +1,448 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{csquotes}
+\usepackage[american]{babel}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{xurl}
+\usepackage{booktabs}
+\usepackage{microtype}
+\emergencystretch=3em
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{observation}[theorem]{Observation}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{question}[theorem]{Question}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\zk}[2]{\zeta_{#1#2}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\R}{\mathbb{R}}
+\DeclareMathOperator{\SO}{SO}
+\DeclareMathOperator{\Ob}{O}
+
+\title{A verification note on the complex-orthogonal representation of the colored braid groupoid%
+\thanks{Comment on arXiv:2606.20473 (I.~E.~Rohozhkin, \emph{Invariants of the Colored Braid Groupoid}).}}
+\author{Logan M. Dixon\thanks{Independent Researcher. Email:
+\texttt{lmdixon23@gmail.com}. ORCID: 0009-0001-0592-462X.}}
+\date{June 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We record an independent, fully reproducible computational study of the complex-orthogonal
+representation $f'$ of the colored braid groupoid introduced by Rohozhkin \cite{rohozhkin2026}
+(arXiv:2606.20473). The orthogonality of the flip operators is \emph{structural}:
+$\cos^2\phi_{ijkl}+\sin^2\phi_{ijkl}=1$ is a Ptolemy/Pl\"ucker identity holding for every ordering of
+the points, so each operator satisfies $A^{\mathsf T}A=I$ over $\C$, with genuine real orthogonality
+only when the relevant ratios are positive. The quadrilateral sign rule is \emph{essentially unique}: of the $4^{6}$ assignments exactly two satisfy the pentagon relation for all $120$ orderings (the
+paper's $B/C$ rule and its orientation mirror). We also correct a typographical error in the main-text
+pentagon equation, given correctly in the appendix, and an erratum in the two displayed worked-example
+matrices, which are unit-diagonal but $I+(\text{skew})$ with determinants $\approx 617.52$ and $49$,
+hence not orthogonal, although the products of the printed factors are correct. The rational operators
+preserve an explicit diagonal form $Q(\Delta_{pqr})=(\zeta_{pq}\zeta_{pr}\zeta_{qr})^{-1}$, so
+$f'=DfD^{-1}$ \emph{per flip} with $D=\operatorname{diag}(Q^{1/2})$, giving the unit-diagonal and
+determinant-$1$ properties on pure braids; whether the global $B/C$ sign rule realizes this $Q^{1/2}$
+branch around every closed loop, so that the transfer applies to the paper's \emph{own} signed $f'$, is
+left as a conjecture. For the inner pure braid group at $n=3,4$ the \emph{rational} invariant is exactly
+the abelianization $f(\beta)=I+\sum\ell_{ij}(\beta)N_{ij}$ in pairwise linking numbers, so
+$\ker f=[PB,PB]$ there, in exact arithmetic on flip sequences that an exact combinatorial check
+certifies as legal and resolution-robust; general $n$, the full $PB_{n+3}$, and the signed-$f'$ analogue
+remain open. This pins down the incompleteness the paper observes (the Borromean braid is Brunnian,
+hence in the kernel). All claims are reproduced by short scripts provided alongside this note; the finite
+ones are verified in exact arithmetic.
+\end{abstract}
+
+\medskip
+\noindent\textbf{2020 Mathematics Subject Classification.} 20F36 (primary); 57K10, 20F14, 13F60, 15A63.
+
+\smallskip
+\noindent\textbf{Keywords.} colored braid groupoid; pure braid group; pentagon relation; Ptolemy/Pl\"ucker
+identity; complex-orthogonal representation; diagonal similarity; abelianization; linking number;
+Brunnian braid; Delaunay flip.
+
+\section{Scope}
+This is a verification-and-corrections note, not a new construction. We take the operators of
+\cite{rohozhkin2026} (representations of the colored braid groupoid \cite{licata-vertesi}) exactly as
+defined there and study them by exact and interval-free
+floating-point computation with assertions; every numerical statement below is reproduced by a
+named script (\S\ref{sec:repro}). Nothing here bears on the correctness of the paper's main
+theorems, which concern the existence of the representations; we sharpen and, in one place,
+correct the surrounding apparatus, and we record a structural fact and a uniqueness statement that
+the paper does not make explicit.
+
+\section{Setup}
+Following \cite{rohozhkin2026}, to each point one attaches a value $\zeta_i$ (the values pairwise
+distinct), and to a flip of the diagonal $ik$ to $jl$ inside a quadrilateral with vertices
+$i,j,k,l$ one attaches the linear map
+\begin{equation}\label{eq:op}
+\Delta_{ijk}\mapsto \cos\phi_{ijkl}\,\Delta_{ijl}-\sin\phi_{ijkl}\,\Delta_{jkl},\qquad
+\Delta_{ikl}\mapsto \sin\phi_{ijkl}\,\Delta_{ijl}+\cos\phi_{ijkl}\,\Delta_{jkl},
+\end{equation}
+fixing every other triangle, where with $\zk ab:=\zeta_a-\zeta_b$,
+\[
+\cos\phi_{ijkl}=(-1)^{s}\sqrt{\frac{\zk il\,\zk jk}{\zk ik\,\zk jl}},\qquad
+\sin\phi_{ijkl}=(-1)^{r}\sqrt{\frac{\zk ij\,\zk kl}{\zk ik\,\zk jl}},
+\]
+the signs $s,r$ depending on the planar type of the quadrilateral (the six types $A$--$F$, with
+$s=1$ for type $B$ and $r=1$ for type $C$). The index assignment $i,j,k,l$ is the one of the
+paper: $i$ is the vertex of smallest value, $k$ its diagonal opposite, and $j,l$ the remaining
+two with $\zeta_j<\zeta_l$.
+
+The paper also gives a \emph{rational} representation $f$ over $\mathbb{Q}$ (the pure-braid invariant
+of \cite{rohozhkin-jktr}), with the same support
+but rational coefficients,
+\begin{equation}\label{eq:op-rational}
+\Delta_{ijk}\mapsto \tfrac{\zk il}{\zk ik}\,\Delta_{ijl}+\tfrac{\zk lk}{\zk ik}\,\Delta_{jkl},\qquad
+\Delta_{ikl}\mapsto \tfrac{\zk ij}{\zk ik}\,\Delta_{ijl}+\tfrac{\zk jk}{\zk ik}\,\Delta_{jkl},
+\end{equation}
+to which the complex-orthogonal $f'$ of \eqref{eq:op} is closely related; \S\ref{sec:braid} concerns
+both.
+
+\section{Orthogonality is structural (and complex)}
+\begin{lemma}[Ptolemy/Pl\"ucker]\label{lem:ptolemy}
+For all values $\zeta_i,\zeta_j,\zeta_k,\zeta_l$,
+\[
+\zk il\,\zk jk+\zk ij\,\zk kl=\zk ik\,\zk jl .
+\]
+\end{lemma}
+\begin{proof}
+Expand: $\zk il\zk jk+\zk ij\zk kl=(\zeta_i-\zeta_l)(\zeta_j-\zeta_k)+(\zeta_i-\zeta_j)(\zeta_k-\zeta_l)
+=(\zeta_i-\zeta_k)(\zeta_j-\zeta_l)=\zk ik\,\zk jl$ in one line; the cross terms in $\zeta_i\zeta_k$
+cancel. \qed
+\end{proof}
+
+\begin{remark}
+Lemma~\ref{lem:ptolemy} is the classical Pl\"ucker/Ptolemy three-term relation that underlies the
+pentagon (Korepanov) literature for operators of this type \cite{korepanov2013}; we record it only to
+make the complex-orthogonality below explicit, not as a new identity.
+\end{remark}
+
+\begin{proposition}\label{prop:ortho}
+For every assignment of pairwise-distinct values, the $2\times2$ active block
+$\bigl[\begin{smallmatrix}\cos\phi&\sin\phi\\-\sin\phi&\cos\phi\end{smallmatrix}\bigr]$ of
+\eqref{eq:op} satisfies $\cos^2\phi_{ijkl}+\sin^2\phi_{ijkl}=1$, so the flip operator is
+complex-orthogonal, $A^{\mathsf T}A=I$. The entries are real (a genuine rotation) iff
+$\zk il\zk jk/(\zk ik\zk jl)$ and $\zk ij\zk kl/(\zk ik\zk jl)$ are positive; otherwise the operator
+is complex-orthogonal with imaginary entries.
+\end{proposition}
+\begin{proof}
+$\cos^2\phi+\sin^2\phi=\dfrac{\zk il\zk jk+\zk ij\zk kl}{\zk ik\zk jl}=1$ by
+Lemma~\ref{lem:ptolemy}. The block is then orthogonal over $\C$, and products of
+complex-orthogonal matrices are complex-orthogonal, so the whole image of $f'$ lies in
+$\SO(2n+1,\C)$ (each active block has determinant $\cos^2\phi+\sin^2\phi=1$, so the image lies in the
+\emph{special} complex-orthogonal group). The reality criterion is immediate from the radicands. \qed
+\end{proof}
+
+\begin{remark}
+The appendix worked example of \cite{rohozhkin2026} already exhibits imaginary entries
+(e.g. $\pm 0.354\,i$); Proposition~\ref{prop:ortho} explains them and locates the image in the
+\emph{complex} orthogonal group. This distinction matters for any later construction that would
+take advantage of orthogonality (for instance a unitary structure or a trace), and we suggest
+stating ``complex-orthogonal'' explicitly.
+\end{remark}
+
+\section{Erratum: the main-text pentagon equation}
+The main-text pentagon equation (eq.~(2.8) of \cite{rohozhkin2026}) prints its
+right-hand side with angles $\phi_{1235},\phi_{2345},\phi_{2345}$: the four-subset $\{1,2,4,5\}$ is
+absent and $\{2,3,4,5\}$ appears twice. A pentagon relation uses each of the five four-subsets
+$\{1234\},\{1235\},\{1245\},\{1345\},\{2345\}$ exactly once, and the paper's appendix writes the
+third factor correctly with $\phi_{1245}$.
+
+\begin{proposition}\label{prop:typo}
+With $\zeta=(5,4,3,2,1)$ (the decreasing order assumed in the cited equation), the printed
+right-hand side differs from the left-hand side by $\approx 0.26$ in Frobenius norm, while the
+appendix form (third factor $\phi_{1245}$) agrees to machine precision.
+\end{proposition}
+This is a typographical error in the displayed equation only: the appendix uses the corrected
+factor $\phi_{1245}$, and we found no other occurrence relying on the erroneous form. Verified
+by \texttt{code/pentagon\_typo.py}.
+
+\section{Uniqueness of the sign correction}
+The paper notes that the pentagon equation ``holds for the decreasing order and some others, but
+not every order,'' which is why the type-dependent signs $s,r$ are introduced. We make this
+precise.
+
+\begin{proposition}\label{prop:signs}
+Encode a quadrilateral type by the counter-clockwise sequence of value-ranks read from the
+smallest-value vertex. Then:
+\begin{enumerate}
+\item[(a)] With no sign correction, the $5$-cycle (pentagon) relation holds for exactly $60$ of
+the $120$ orderings of $\{\zeta_1,\dots,\zeta_5\}$.
+\item[(b)] Among all $4^{6}$ assignments of a $(\cos\text{-sign},\sin\text{-sign})\in\{\pm1\}^2$ to
+the six types, exactly two make the relation hold for all $120$ orderings. Each has the form
+``one type gets a $\cos$-flip, one (other) type gets a $\sin$-flip.'' One is the paper's rule
+($\cos$-flip on type $B$, $\sin$-flip on type $C$); the other is its orientation mirror (the two
+necklaces are cyclic reverses).
+\end{enumerate}
+\end{proposition}
+Thus the paper's sign rule is not merely \emph{a} correction but is, up to the choice of planar
+orientation, the unique one of its form. The count is certified exactly: \texttt{exact\_checks.py}
+verifies both winners over all $120$ orderings and exhibits an exact failure witness for each of the
+other $4094$ assignments (floating point is used only to locate a candidate witness; the verdict is
+exact). Here the $120$ orderings are the assignments of $\{\zeta_1,\dots,\zeta_5\}$ to the five vertices
+of one fixed generic convex pentagon; the type-incidences are geometry-aware (each of the six types
+arises), but configuration-independence is not separately swept. The $60/120$ and $120/120$ counts are reproduced by \texttt{code/relations.py}.
+
+Explicitly, the six counter-clockwise rank-necklaces correspond to the paper's types $A$--$F$
+(Fig.~10) as $A=(1,2,3,4)$, $B=(1,3,2,4)$, $C=(1,2,4,3)$, $D=(1,4,3,2)$, $E=(1,4,2,3)$,
+$F=(1,3,4,2)$, and the paper's rule is the $\cos$-flip on $B$ and $\sin$-flip on $C$. The second
+solution, the $\cos$-flip on $E=(1,4,2,3)$ and $\sin$-flip on $F=(1,3,4,2)$, is the
+orientation-reversed image ($B\leftrightarrow E$, $C\leftrightarrow F$ are cyclic reverses); it is a
+genuine alternative under the mirrored planar embedding, not the same rule, which a mirror-orientation
+negative test in \texttt{sign\_uniqueness.py} distinguishes.
+
+\section{The groupoid relations, verified}
+\begin{proposition}\label{prop:relations}
+For the operators \eqref{eq:op} with the sign rule of Proposition~\ref{prop:signs}, all four
+defining relations of $\mathcal G^{4}_{n+3}$ \cite{manturov-nikonov,fedoseev-manturov-nikonov} hold: the identity and $4$-cycle relations by
+construction; the $5$-cycle relation for all $120$ orderings (Proposition~\ref{prop:signs}); and
+far-commutativity, namely that flips in quadrilaterals with disjoint interiors commute. This is checked
+numerically over all $8!$ orderings of an eight-point configuration (residual $0$), with an exact
+representative check and a structural disjoint-support argument (\texttt{exact\_checks.py}).
+\end{proposition}
+Verified by \texttt{code/relations.py} and, exactly, by \texttt{code/exact\_checks.py}.
+Far-commutativity is in fact a proposition, not merely a tested instance: if two flips occur in
+quadrilaterals with disjoint vertex sets, their four affected triangles $\{ijk,ikl,ijl,jkl\}$ are
+disjoint from the other flip's four, so the two operators act on complementary coordinate blocks of
+$\mathbb{C}^{(\mathbf T)}$ and therefore commute; the $8!$-ordering check confirms one instance.
+
+\section{Pure-braid images and the trace obstruction (computational)}\label{sec:braid}
+We reconstruct the paper's worked pure-braid example flip-by-flip. The appendix presents
+$f'(b_{\zeta_4\zeta_7})$ ($n=4$, $\zeta_l=l$) as a product of sixteen named flip matrices
+$A_{ikjl}$ and prints two of them explicitly. Reading the subscript $A_{ikjl}$ as the operator
+indices positionally and taking the \emph{principal} complex square root (with no separate
+$(-1)^s,(-1)^r$ sign flip, the branch being automatic) reproduces both printed matrices to eight
+digits ($A_{4615}$: $\cos=0.79056942$, $\sin=0.61237244$; $A_{1524}$: $\cos=1.06066017$,
+$\sin=0.35355339\,i$). This locks the per-flip convention.
+
+Composing the sixteen factors (rightmost first) reproduces the paper's stated global property of
+pure-braid matrices (determinant $1$ and unit diagonal) to $\sim 10^{-16}$, \emph{for the
+rational representation} $f$ of \eqref{eq:op-rational}; the reversed composition order and the
+reconstruction of the initial triangulation are validated jointly by this match against the paper's
+own assertion.
+
+\begin{remark}[Why the na\"ive trace fails]
+\cite{rohozhkin2026} states that \emph{every} pure-braid matrix has unit diagonal; granting this,
+$\operatorname{tr} f(\beta)=2n+1$ for all pure $\beta$, so the trace carries no information and is
+not a candidate knot/link invariant. We do not prove the universal statement here; we confirm it on
+the worked example $b_{\zeta_4\zeta_7}$ (where $\operatorname{tr} f=9$), which is the obstruction
+noted in \cite{rohozhkin2026}.
+It motivates deforming the operators so that the diagonal, determinant, or trace can vary.
+\end{remark}
+
+Under naive matrix composition the \emph{complex-orthogonal} product $f'(b_{\zeta_4\zeta_7})$ is
+\emph{not} unit-diagonal ($\max_i|M_{ii}-1|=3.0$), although \cite{rohozhkin2026} states the property
+for both representations. Section~\ref{sec:similar} resolves this for the $Q$-orthonormalized
+conjugate: per flip $f'=DfD^{-1}$ with $D=\operatorname{diag}(Q^{1/2})$, so the $Q$-orthonormalized
+$f'(\beta)$ has the same diagonal as $f(\beta)$, the naive product failing only because the square-root
+branch defining $D$ was not tracked consistently around the loop. Whether this $Q$-orthonormalized
+operator coincides with the paper's $B/C$-signed $f'(\beta)$ around the loop is the branch conjecture of
+Proposition~\ref{prop:similar}'s remark. The braid-simulation pipeline of Section~\ref{sec:kernel} (which moves the inner points, reads off
+the Delaunay flips, and composes the operators) reproduces the braid relations, far-commutativity,
+and the Borromean collapse $(\sigma_1\sigma_2^{-1})^3\mapsto I$ in these diagnostic checks, and is what
+Section~\ref{sec:kernel} uses to \emph{locate} the flip sequences on the inner pure braid group.
+
+\section{The two representations are diagonally similar}\label{sec:similar}
+The discrepancy above has a structural explanation: the rational and complex-orthogonal representations
+differ by a diagonal change of basis.
+
+\begin{proposition}\label{prop:similar}
+Let $Q$ be the diagonal form on $\mathbb{C}^{(\mathbf T)}$ with
+$Q(\Delta_{pqr})=(\zk pq\,\zk pr\,\zk qr)^{-1}$, the reciprocal product of the triangle's three
+pairwise differences. Every rational flip operator \eqref{eq:op-rational} is an isometry of $Q$:
+$f^{\mathsf T}Q_p\,f=Q_t$ between the source and target triangulations. Equivalently, writing
+$D=\operatorname{diag}\big(Q^{1/2}\big)$, the complex-orthogonal operator \eqref{eq:op} is
+$f'=D\,f\,D^{-1}$.
+\end{proposition}
+\begin{proof}
+A flip changes only the four triangles $\Delta_{ijk},\Delta_{ikl}\to\Delta_{ijl},\Delta_{jkl}$;
+every other triangle is fixed and contributes equal diagonal entries to $Q_t$ and $Q_p$. On the
+$2\times2$ active block, $f^{\mathsf T}\operatorname{diag}(Q_{ijl},Q_{jkl})\,f
+=\operatorname{diag}(Q_{ijk},Q_{ikl})$ is a rational identity in $\zeta_i,\zeta_j,\zeta_k,\zeta_l$,
+verified by symbolic computation (\texttt{code/diagonal\_form.py}, residual $0$). Dividing the
+$(\mathrm{row},\mathrm{col})$ entry of $f$ by $\sqrt{Q(\mathrm{col})/Q(\mathrm{row})}$ turns
+$\zk il/\zk ik$ into $\sqrt{\zk il\,\zk jk/(\zk ik\,\zk jl)}=\cos\phi_{ijkl}$ and likewise for the
+other three entries, which is precisely \eqref{eq:op}; hence $f'=DfD^{-1}$. \qed
+\end{proof}
+
+\begin{corollary}\label{cor:unitdiag}
+For every flip word $\beta$, $f(\beta)$ is an isometry of $Q$. A composite of $Q$-isometries is again
+one: for two consecutive flips the triangle they share carries a single value of $Q$, so the first
+flip's target form is the second's source form and the two cancel; Proposition~\ref{prop:similar} is
+the one-flip case, and the two-flip case is checked symbolically
+(\texttt{code/diagonal\_form.py}). For a pure braid the start and end triangulations coincide,
+so $f(\beta)$ preserves $Q_{t_0}$, and with $D=\operatorname{diag}(Q_{t_0}^{1/2})$ the conjugate
+$f'(\beta)=D\,f(\beta)\,D^{-1}$ is complex-orthogonal; being a diagonal conjugate of $f(\beta)$, it has
+the same main diagonal and the same determinant. Granting the property of \cite{rohozhkin2026} that
+$f(\beta)$ has unit diagonal and determinant $1$ (Section~\ref{sec:braid}, confirmed on
+$b_{\zeta_4\zeta_7}$), so does $f'(\beta)$ , where $f'(\beta)$ here denotes the $Q$-orthonormalized
+conjugate $D\,f(\beta)\,D^{-1}$, whose agreement with the paper's $B/C$-signed operator around the loop
+is the branch identification conjectured in the remark below. The unit-diagonal and determinant-$1$
+transfer is thus certified for the $Q$-branch conjugate and conditional, through that conjecture, for the
+paper's \emph{own} $f'(\beta)$. This is the property naive composition appeared to violate.
+\end{corollary}
+
+\begin{remark}
+The factor $D$ involves $Q^{1/2}$, a square root with a sign per triangle (the form $Q$ is
+antisymmetric under relabeling a triangle's vertices). Composing cos/sin matrices with independently
+chosen principal branches need not keep $D$ single-valued around a closed loop. We therefore
+\emph{conjecture} that the paper's $B/C$ sign rule is exactly the branch bookkeeping for $Q^{1/2}$;
+this is a structural inference, not proved here at the level of the algebraic identity above. What is
+checked: on $b_{\zeta_4\zeta_7}$, numerically recovering the form $Q$ that the loop preserves and
+conjugating yields a matrix that is, to machine precision, complex-orthogonal, unit-diagonal, and of
+determinant $1$ (\texttt{diagonal\_form.py}); a confirmation on the example, not a proof of the
+global branch identification.
+\end{remark}
+
+\begin{remark}[an erratum in the worked examples]
+The paper prints, for $\zeta_l=l$, the full $9\times9$ matrices $f'(b_{\zeta_4\zeta_7})$ and
+$f'(b_{\zeta_5\zeta_6})$ as products of named flip operators followed by a displayed result. The
+displayed result matrices are incorrect: each is unit-diagonal but is $I+(\text{skew-symmetric})$,
+hence \emph{not} complex-orthogonal and with determinant $\approx 617.52$ and $49$ respectively, contradicting
+the paper's own properties (orthogonal; determinant $1$). The paper's \emph{factors} are fine:
+multiplying them in printed order gives, in both cases, a complex-orthogonal, unit-diagonal,
+determinant-$1$, rank-$2$ one-step unipotent matrix, consistent with the rational computation via
+Proposition~\ref{prop:similar} (\texttt{appendix\_full\_matrix.py}). Their rank-$2$ unipotent form also
+corroborates Observation~\ref{obs:abelian} on the inner-outer generators $A_{47},A_{56}$.
+\end{remark}
+
+\begin{question}
+What is the kernel of $f'$ on $\mathrm{ColB}(n)$? Granting the branch conjecture above it equals the
+kernel of $f$, whose image lies in $\SO(2n+1,\C)$ and is unit-diagonal on pure braids; characterizing
+the subgroup generated, and the kernel, would explain any collapse of the invariant structurally
+rather than by a single computation.
+\end{question}
+
+\section{The kernel: the invariant is the abelianization}\label{sec:kernel}
+The question above has, at least for small cases, a complete answer. Realizing braids as
+motions of the inner points and recording the Delaunay flips \cite{aurenhammer} (\texttt{code/kernel\_probe.py};
+the realization must braid strands by \emph{position}, after which trivially trivial braids, the
+braid relation $\sigma_1\sigma_2\sigma_1=\sigma_2\sigma_1\sigma_2$, far commutation, and the
+Borromean braid $(\sigma_1\sigma_2^{-1})^3$ all map to the identity), we compute the representation on
+the pure braid group of the inner strands. The exact computation (\texttt{code/exact\_kernel.py}) applies the \emph{rational} operators $f$ to the
+flip sequence the Delaunay pipeline records, so the structure below is established for $f$ in exact
+arithmetic, conditional on that float-located sequence; the floating-point pipeline
+(\texttt{code/float\_kernel.py}) applies the complex operators and agrees diagnostically. The transfer to
+the signed $f'$ is conditional on the diagonal-similarity conjecture (Proposition~\ref{prop:similar}).
+For $n=3$ and $n=4$ the structure is uniform:
+
+\begin{observation}[verified in exact arithmetic for the inner $PB_n$, $n=3,4$, given the Delaunay-located flip sequences]\label{obs:abelian}
+Each pure-braid generator $A_{ij}$ (linking of strands $i,j$) maps to $I+N_{ij}$ where
+$N_{ij}^2=0$, $\operatorname{rank}N_{ij}=2$, \emph{all products} $N_{ij}N_{kl}=0$, and the $N_{ij}$
+are linearly independent and mutually commuting. Hence $f$ is purely additive,
+\[
+   f(\beta)=I+\sum_{i<j}\ell_{ij}(\beta)\,N_{ij},
+\]
+with $\ell_{ij}(\beta)$ the exponent sum of $A_{ij}$ in $\beta$, i.e.\ the pairwise linking number.
+The number of independent $N_{ij}$ equals $\binom{n}{2}=\dim PB_n^{\mathrm{ab}}$, so $f$ is the
+abelianization $PB_n\to\mathbb{Z}^{\binom n2}$ on the tested group, whence
+\[
+   \ker f=[PB_n,PB_n]\qquad(\text{inner }PB_n,\ n=3,4),
+\]
+in exact arithmetic on the Delaunay-located flip sequences; $\ker f'=[PB_n,PB_n]$ holds conditionally on
+the diagonal-similarity conjecture (Proposition~\ref{prop:similar}).
+\end{observation}
+
+Thus the invariant records exactly the pairwise linking numbers and is blind to the entire commutator
+subgroup. This makes precise the incompleteness \cite{rohozhkin2026} observes: the Borromean braid is
+Brunnian \cite{kassel-turaev} (so all pairwise linking numbers vanish), hence lies in $[PB,PB]$, hence maps to $I$. The constant trace of
+Section~\ref{sec:braid} is the same fact, since $I+\sum\ell_{ij}N_{ij}$ has trace $2n+1$ regardless of
+the $\ell_{ij}$. Any trace- or determinant-based knot invariant must therefore deform the construction
+away from this abelian, unipotent image.
+
+This is verified in exact arithmetic (\texttt{exact\_kernel.py}, sympy: the braid's combinatorial flip
+sequence with exact rational operators) for the inner pure braid group at $n=3,4$; \texttt{float\_kernel.py}
+is the floating-point version. Generators that loop an inner strand around a fixed point are also rank-2
+one-step unipotents, consistent with the same description for the full $PB_{n+3}$, but we neither
+realize them with the present tool nor prove the statement for general $n$.
+
+\section{Verification and reproducibility}\label{sec:repro}
+
+\paragraph{Artifact of record.} The accompanying repository
+(\url{https://github.com/lmdixon23/cbg-2026-representation-checks}) ships the code; its
+\texttt{verification/STATUS-LEDGER.md} records the evidence type and status of every claim above, and
+\texttt{run\_all.sh} runs the suite in claim order.
+
+\paragraph{Reproduction protocol.} The computational claims can be reproduced from the repository with
+\texttt{bash run\_all.sh} (Python, \texttt{numpy}/\texttt{scipy}/\texttt{sympy}); each script is
+self-contained and prints its checks. The exact certificates use no floating point and no tolerance.
+
+\paragraph{Claim-to-artifact map.} \texttt{code/operators.py} (operators, Lemma~\ref{lem:ptolemy});
+\texttt{code/relations.py} and \texttt{code/exact\_checks.py} (the four relations; the $60/120$ and
+$120/120$ counts; sign uniqueness); \texttt{code/pentagon\_typo.py} (Proposition~\ref{prop:typo});
+\texttt{code/sign\_uniqueness.py} (Proposition~\ref{prop:signs});
+\texttt{code/appendix\_reconstruction.py} (the convention lock and the rational pure-braid property of
+\S\ref{sec:braid}); \texttt{code/diagonal\_form.py} (Proposition~\ref{prop:similar});
+\texttt{code/appendix\_full\_matrix.py} (the appendix worked-example erratum); \texttt{code/float\_kernel.py}
+and \texttt{code/exact\_kernel.py} (Observation~\ref{obs:abelian}, floating point and exact, inner $PB_n$,
+$n=3,4$); \texttt{code/check\_flip\_sequence.py} (the exact combinatorial flip-sequence certificate).
+\texttt{code/kernel\_probe.py} is a diagnostic only (braid pipeline; Borromean $\to I$) and supports no
+property claim. Each load-bearing claim carries an evidence type in the ledger (algebraic identity, finite
+exhaustive, checker-verified, or strategic inference).
+
+\paragraph{Independent checks.} \texttt{BLIND\_CHECK.py} recomputes the headline quantities from the
+formulas alone, importing nothing from \texttt{code/}, so a transcription or convention error would surface
+as a disagreement. The load-bearing identities were additionally re-derived by hand (the Ptolemy lemma
+(Lemma~\ref{lem:ptolemy}), the single-flip form identity $f^{\mathsf T}Qf=Q$ behind
+Proposition~\ref{prop:similar}, and the two printed flip matrices) and an independent pass re-ran
+the suite in a separate environment and carried out the literature checks.
+
+\paragraph{Limitations and open obligations.} The finite claims are exact; the conjectural items rest on no
+machine assertion. The identification of the paper's $B/C$ sign rule with the $Q^{1/2}$ branch, the
+global transfer to the paper's own signed $f'$, is an explicit conjecture (Proposition~\ref{prop:similar}
+and its remark). The kernel result is exact for the rational $f$ on the inner $PB_n$, $n=3,4$, conditional
+on the Delaunay-located flip sequence (verified legal and resolution-robust, but not yet derived
+geometry-free); the statement for general $n$, the full $PB_{n+3}$, and the signed $\ker f'$ remain open.
+
+\paragraph{AI assistance.} AI systems were used as research tools during this project, including Claude by
+Anthropic and GPT by OpenAI. They assisted with candidate generation, code drafting, adversarial review, and
+verification-ledger preparation. Their outputs were not treated as authoritative: candidate constructions,
+code, constants, and literature summaries were accepted only after source checking, independent
+recomputation, author-executed verification runs, or hand derivation where appropriate. The author set the
+research direction and acceptance criteria, ran the verification pipeline, and bears sole responsibility for
+all claims.
+
+\section*{Declarations}
+\paragraph{Funding.} No funding was received for this work.
+\paragraph{Competing interests.} The author declares no competing interests.
+\paragraph{Data and code availability.} The code, verification scripts, and status ledger are available in
+the accompanying repository (\url{https://github.com/lmdixon23/cbg-2026-representation-checks}); an archival
+DOI will be added at submission.
+
+\begin{thebibliography}{9}
+\bibitem{rohozhkin2026} I.~E.~Rohozhkin, \emph{Invariants of the Colored Braid Groupoid},
+preprint, 2026, \href{https://arxiv.org/abs/2606.20473}{arXiv:2606.20473}.
+\bibitem{korepanov2013} I.~G.~Korepanov and N.~M.~Sadykov, \emph{Pentagon relations in direct sums
+and Grassmann algebras}, SIGMA Symmetry Integrability Geom. Methods Appl. \textbf{9} (2013), Paper 030,
+16 pp. \href{https://doi.org/10.3842/SIGMA.2013.030}{doi:10.3842/SIGMA.2013.030}; \href{https://arxiv.org/abs/1212.4462}{arXiv:1212.4462}.
+\bibitem{rohozhkin-jktr} I.~E.~Rohozhkin, \emph{Pentagon equations, Delaunay triangulations and the
+pure braid group invariant}, J. Knot Theory Ramifications (2025).
+\bibitem{licata-vertesi} J.~Licata and V.~V\'ertesi, \emph{Liftable braids and colored braid groupoid},
+preprint, 2025, \href{https://arxiv.org/abs/2508.05146}{arXiv:2508.05146}.
+\bibitem{manturov-nikonov} V.~O.~Manturov and I.~M.~Nikonov, \emph{The groups $\Gamma^4_n$, braids, and
+3-manifolds}, preprint, 2023, \href{https://arxiv.org/abs/2305.06316}{arXiv:2305.06316}.
+\bibitem{fedoseev-manturov-nikonov} D.~A.~Fedoseev, V.~O.~Manturov, and I.~M.~Nikonov, \emph{Manifolds
+of triangulations, braid groups of manifolds, and the groups $\Gamma^k_n$}, preprint, 2020,
+\href{https://arxiv.org/abs/1912.02695}{arXiv:1912.02695}.
+\bibitem{kassel-turaev} C.~Kassel and V.~Turaev, \emph{Braid Groups}, Graduate Texts in Mathematics
+\textbf{247}, Springer, 2008.
+\bibitem{aurenhammer} F.~Aurenhammer, R.~Klein, and D.-T.~Lee, \emph{Voronoi Diagrams and Delaunay
+Triangulations}, World Scientific, 2013.
+\end{thebibliography}
+
+\end{document}

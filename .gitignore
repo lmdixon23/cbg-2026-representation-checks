@@ -1,0 +1,29 @@
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+paper/*.pdf
+
+# Private working files (never commit)
+_local/
+*.local.md
+*.tmp.*
+
+# Python and OS noise
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+
+# Raw hardware/system reports may carry machine or account identifiers; never commit
+*hardware-profile*.txt
+*system-specs*.txt
+dxdiag.txt
+parallelism-report.txt
+systeminfo.txt
